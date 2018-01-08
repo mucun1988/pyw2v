@@ -17,7 +17,6 @@ def download_preprocess_data(output_file='data/enwik9', replace=True):
             os.system('rm ' + output_file)
     else:
         print(f'file does not exist and now create it.')
-
     print(f'download data...')
     os.system('wget http://mattmahoney.net/dc/enwik9.zip -O data/tmp.gz')
     print(f'download data... done')
@@ -60,7 +59,7 @@ def train_w2v_model(file_to_train='data/enwik9', file_save_vocab='rslt/vocab.txt
                     ' -iter ' + str(num_iter) + \
                     ' -min-count ' + str(min_count) + \
                     ' -alpha ' + str(alpha) + \
-                    ' -lambda ' + str(lam)
+                    ' -lambda ' + str(lam) 
     os.system(command)
     #E.g., os.system('./word2vec_mm -train data/enwik9.txt -save-vocab rslt/vocab.txt -output rslt/vector.txt -cbow 0 -size 200 -window 8 -negative 25 -hs 0 -sample 1e-4 -threads 20 -binary 0 -iter 1 -min-count 5000')
 
