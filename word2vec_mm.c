@@ -44,7 +44,7 @@ int *vocab_hash;
 long long vocab_max_size = 1000, vocab_size = 0, layer1_size = 100;
 long long train_words = 0, word_count_actual = 0, iter = 5, file_size = 0, classes = 0;
 real alpha = 0.025, starting_alpha, sample = 1e-3;
-long double lambda = 0.0;
+long double lambda = 0.0, ending_lambda;
 real *syn0, *syn1, *syn1neg, *expTable;
 clock_t start;
 
@@ -395,13 +395,18 @@ void *TrainModelThread(void *id) {
       last_word_count = word_count;
       if ((debug_mode > 1)) {
         now=clock();
-        printf("%cAlpha: %f  Progress: %.2f%%  Words/thread/sec: %.2fk  ", 13, alpha,
+        printf("%cAlpha: %f  Progress: %.2f%%  Words/thread/sec: %.2fk  ", 13, alpha, 
          word_count_actual / (real)(iter * train_words + 1) * 100,
          word_count_actual / ((real)(now - start + 1) / (real)CLOCKS_PER_SEC * 1000));
         fflush(stdout);
       }
       alpha = starting_alpha * (1 - word_count_actual / (real)(iter * train_words + 1));
       if (alpha < starting_alpha * 0.0001) alpha = starting_alpha * 0.0001;
+
+      // Matthew Mu
+      lambda = ending_lambda * word_count_actual / (real)(iter * train_words + 1);
+      if (lambda > ending_lambda) lambda = ending_lambda;
+
     }
     if (sentence_length == 0) {
       while (1) {
@@ -542,27 +547,16 @@ void *TrainModelThread(void *id) {
           else if (f < -MAX_EXP) g = (label - 0) * alpha;
           else g = (label - expTable[(int)((f + MAX_EXP) * (EXP_TABLE_SIZE / MAX_EXP / 2))]) * alpha;
           for (c = 0; c < layer1_size; c++) neu1e[c] += g * syn1neg[c + l2];
-          for (c = 0; c < layer1_size; c++) syn1neg[c + l2] += g * syn0[c + l1] + alpha*lambda*syn1neg[c + l2]; //Matthew Mu
+          for (c = 0; c < layer1_size; c++) syn1neg[c + l2] += g * syn0[c + l1]; 
         }
         // Learn weights input -> hidden
-
-        // Matthew Mu
-        double col_len = 0;
-        for (c = 0; c < layer1_size; c++) {
-            syn0[c + l1] += neu1e[c] + alpha*negative*lambda*syn0[c + l1];
-            if (normalize == 1) col_len += syn0[c + l1]*syn0[c + l1];
-        }
-        if (normalize == 1){
-            col_len = sqrt(col_len);
-            for (c = 0; c < layer1_size; c++) {
-                syn0[c + l1] /= col_len; //normalization
-            }
-        }
-
+        for (c = 0; c < layer1_size; c++) syn0[c + l1] += neu1e[c];
       }
     }
     sentence_position++;
     if (sentence_position >= sentence_length) {
+      for (c=0; c<layer1_size*vocab_size; c++) syn0[c] += lambda*syn0[c];
+      for (c=0; c<layer1_size*vocab_size; c++) syn1neg[c] += lambda*syn1neg[c];
       sentence_length = 0;
       continue;
     }
@@ -579,6 +573,7 @@ void TrainModel() {
   pthread_t *pt = (pthread_t *)malloc(num_threads * sizeof(pthread_t));
   printf("Starting training using file %s\n", train_file);
   starting_alpha = alpha;
+  ending_lambda = lambda;  // Matthew
   if (read_vocab_file[0] != 0) ReadVocab(); else LearnVocabFromTrainFile();
   if (save_vocab_file[0] != 0) SaveVocab();
   if (output_file[0] == 0) return;

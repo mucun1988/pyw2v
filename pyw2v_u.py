@@ -142,7 +142,7 @@ def similarity_test_one(U, vocab, data_name='men3000'):
     cosines = (G[ind1]*G[ind2]).sum(axis=1)
     ratio = ind1.shape[0]/dataset.shape[0]
     # return a dict
-    return {'dataset': data_name, 'score':stats.spearmanr(cosines, vec2)[0], 'ratio':ratio}
+    return {'dataset': data_name, 'accuracy':stats.spearmanr(cosines, vec2)[0], 'ratio':ratio}
 
 def similarity_test_all(U, vocab):
     """
@@ -205,8 +205,8 @@ def analogical_reasoning(U, vocab, inv_vocab):
     # calculate accuracy
     acc = good_sum / float(dataset.shape[0]-miss_sum)
     ratio = 1 - float(miss_sum)/dataset.shape[0]
-    
-    return {'accuracy':acc, 'ratio': ratio}
+
+    return {'dataset': 'google', 'accuracy':acc, 'ratio':ratio}
 
 if __name__ == "__main__":
     vocab, inv_vocab, word_embedding = load_rslt_from_c_output()
