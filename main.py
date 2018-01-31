@@ -7,13 +7,15 @@ import pickle as pk
 
 make()
 
-lam_set = [0] + [1 / np.power(10, power) for power in np.arange(10, 2, -1)]
+lam_set = [0] + [1 / np.power(10, power) for power in np.arange(15, 2, -1)]
+# lam_set = [.00001]
 rslt = []
 d = 100
 
 for lam in lam_set:
     print(f"lambda = {lam}.")
-    train_w2v_model(num_iter=15, min_count=200, lam=lam, threads=5, word_dim=d)
+    train_w2v_model(num_iter=15, min_count=200,
+                    lam=lam, threads=5, word_dim=d)
     vocab, inv_vocab, word_embedding = load_rslt_from_c_output()
     # analogy
     xx = {'lambda': lam}
@@ -31,5 +33,5 @@ for lam in lam_set:
     print(f"----------------------------------------------------------------------- \n")
 
     df_rslt = pd.DataFrame(rslt)
-    output_file = 'rslt/result_v1_' + str(d) + '.pkl'
+    output_file = 'rslt/result_v4_' + str(d) + '.pkl'
     df_rslt.to_pickle(output_file)
