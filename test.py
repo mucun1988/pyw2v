@@ -26,5 +26,5 @@ for d in d_set:
 
         df_rslt = pd.DataFrame(rslt)
         print(df_rslt)
-        output_file = 'rslt/test_v6_iter_' + str(num_iter) + '.pkl'
+        output_file = 'rslt/test_v10_iter_' + str(num_iter) + '.pkl'
         df_rslt.to_pickle(output_file)

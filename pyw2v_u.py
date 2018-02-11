@@ -19,6 +19,8 @@ def download_preprocess_data(output_file='data/enwik9', replace=True):
     else:
         print(f'file does not exist and now create it.')
     print(f'download data...')
+    os.system('mkdir data')
+    os.system('mkdir rslt')
     os.system('wget http://mattmahoney.net/dc/enwik9.zip -O data/tmp.gz')
     print(f'download data... done')
     print(f'preprocess the data and save it at {output_file}...')
@@ -47,7 +49,7 @@ def make():
 
 
 def train_w2v_model(file_to_train='data/enwik9', file_save_vocab='rslt/vocab.txt', file_save_vector='rslt/vector.txt',
-                    word_dim=200, window=5, downsample=1e-3, negative=5, threads=12, num_iter=5, min_count=5, alpha=.025, lam=0):
+                    word_dim=100, window=5, downsample=1e-3, negative=5, threads=12, num_iter=5, min_count=5, alpha=.025, lam=0):
     """
     train google word2vec model
     """
