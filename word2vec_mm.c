@@ -777,8 +777,9 @@ void *TrainModelThread(void *id)
               l_u = table[(next_random >> 16) % table_size] * layer1_size; //row of U
               for (c = 0; c < layer1_size; c++)
               {
-                syn1neg[c + l_v] += lambda * alpha * syn1neg[c + l_v]; // reg for V[l_v,:]
-                syn0[c + l_u] += lambda * alpha * syn0[c + l_u];       // reg for U[l_u, :]
+                // to do: check
+                syn1neg[c + l_v] -= lambda * alpha * syn1neg[c + l_v]; // reg for V[l_v,:]
+                syn0[c + l_u] -= lambda * alpha * syn0[c + l_u];       // reg for U[l_u, :]
               }
             }
           }
