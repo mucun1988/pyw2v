@@ -517,7 +517,7 @@ void *TrainModelThread(void *id)
         fflush(stdout);
       }
       alpha = starting_alpha * (1 - word_count_actual / (real)(iter * train_words + 1)); // learning rate
-      lambda = ending_lambda * 2 * word_count_actual / (real)(iter * train_words + 1);
+      lambda = ending_lambda * 2 * word_count_actual / (real)(iter * train_words + 1);   // dynamic lambda
       if (alpha < starting_alpha * 0.0001)
         alpha = starting_alpha * 0.0001;
       if (lambda >= ending_lambda)
