@@ -31,15 +31,15 @@ typedef float real; // Precision of float numbers
 
 struct vocab_word
 {
-  long long cn;
+  long long cn; // word frequency
   int *point;
-  char *word, *code, codelen;
+  char *word, *code, codelen; // string word
 };
 
 char train_file[MAX_STRING], output_file[MAX_STRING];
 char save_vocab_file[MAX_STRING], read_vocab_file[MAX_STRING];
-struct vocab_word *vocab;
-int binary = 0, cbow = 1, debug_mode = 2, window = 5, min_count = 5, num_threads = 12, min_reduce = 1;
+struct vocab_word *vocab;                                                                              // all the word in the vocabulary
+int binary = 0, cbow = 1, debug_mode = 2, window = 5, min_count = 5, num_threads = 12, min_reduce = 1; // default values
 int *vocab_hash;
 long long vocab_max_size = 1000, vocab_size = 0, layer1_size = 100;
 long long train_words = 0, word_count_actual = 0, iter = 5, file_size = 0, classes = 0;
@@ -52,6 +52,7 @@ int hs = 0, negative = 5;
 const int table_size = 1e8;
 int *table;
 
+// set up the table for sampling
 void InitUnigramTable()
 {
   int a, i;
@@ -64,7 +65,7 @@ void InitUnigramTable()
   d1 = pow(vocab[i].cn, power) / train_words_pow;
   for (a = 0; a < table_size; a++)
   {
-    table[a] = i;
+    table[a] = i; // the table contrains multiple elements which hold value "i"
     if (a / (double)table_size > d1)
     {
       i++;
@@ -75,7 +76,9 @@ void InitUnigramTable()
   }
 }
 
-// Reads a single word from a file, assuming space + tab + EOL to be word boundaries
+// Reads a single word from a file
+// assuming space + tab + EOL to be word boundaries
+// also assuming sentences are seperated by '\n'
 void ReadWord(char *word, FILE *fin, char *eof)
 {
   int a = 0, ch;
@@ -97,7 +100,7 @@ void ReadWord(char *word, FILE *fin, char *eof)
           ungetc(ch, fin);
         break;
       }
-      if (ch == '\n')
+      if (ch == '\n') // word is empty + new line = end of the sentence
       {
         strcpy(word, (char *)"</s>");
         return;
@@ -113,7 +116,7 @@ void ReadWord(char *word, FILE *fin, char *eof)
   word[a] = 0;
 }
 
-// Returns hash value of a word
+// Returns hash value of a word (coding)
 int GetWordHash(char *word)
 {
   unsigned long long a, hash = 0;
@@ -437,6 +440,11 @@ void ReadVocab()
   fclose(fin);
 }
 
+/**
+ * ====== InitNet ======
+ * 
+ **/
+
 void InitNet()
 {
   long long a, b;
@@ -469,17 +477,18 @@ void InitNet()
     }
     for (a = 0; a < vocab_size; a++)
       for (b = 0; b < layer1_size; b++)
-        syn1neg[a * layer1_size + b] = 0;
+        syn1neg[a * layer1_size + b] = 0; // initialize V as 0
   }
   for (a = 0; a < vocab_size; a++)
     for (b = 0; b < layer1_size; b++)
     {
       next_random = next_random * (unsigned long long)25214903917 + 11;
-      syn0[a * layer1_size + b] = (((next_random & 0xFFFF) / (real)65536) - 0.5) / layer1_size;
+      syn0[a * layer1_size + b] = (((next_random & 0xFFFF) / (real)65536) - 0.5) / layer1_size; // random initialize U
     }
   CreateBinaryTree();
 }
 
+// one thread
 void *TrainModelThread(void *id)
 {
   long long a, b, d, cw, word, last_word, sentence_length = 0, sentence_position = 0;
@@ -495,7 +504,7 @@ void *TrainModelThread(void *id)
   fseek(fi, file_size / (long long)num_threads * (long long)id, SEEK_SET);
   while (1) // this loop covers the whole training process
   {
-    if (word_count - last_word_count > 10000)
+    if (word_count - last_word_count > 10000) // print the process
     {
       word_count_actual += word_count - last_word_count;
       last_word_count = word_count;
@@ -513,6 +522,7 @@ void *TrainModelThread(void *id)
         alpha = starting_alpha * 0.0001;
       if (lambda >= ending_lambda)
         lambda = ending_lambda;
+      // lambda = ending_lambda; // fixed lambda
     }
 
     // this if block: retrieves the next sentence and stores it in "sen"
@@ -536,8 +546,8 @@ void *TrainModelThread(void *id)
           if (ran < (next_random & 0xFFFF) / (real)65536)
             continue;
         }
-        sen[sentence_length] = word;
-        sentence_length++; // count the length of the sentence
+        sen[sentence_length] = word; // put word at "sen"
+        sentence_length++;           // count the length of the sentence
         if (sentence_length >= MAX_SENTENCE_LENGTH)
           break;
       }
@@ -547,10 +557,10 @@ void *TrainModelThread(void *id)
     if (eof || (word_count > train_words / num_threads))
     {
       word_count_actual += word_count - last_word_count;
-      local_iter--;
-      if (local_iter == 0)
+      local_iter--;        // finish one epoch
+      if (local_iter == 0) // finish all epochs (five epochs by default)
         break;
-      word_count = 0;
+      word_count = 0; // reset everything for the new epoch
       last_word_count = 0;
       sentence_length = 0;
       fseek(fi, file_size / (long long)num_threads * (long long)id, SEEK_SET);
@@ -709,13 +719,13 @@ void *TrainModelThread(void *id)
           if (negative > 0)
             for (d = 0; d < negative + 1; d++)
             {
-              if (lambda > 0) // with regularization (Matthew Mu)
-              {
-                next_random = next_random * (unsigned long long)25214903917 + 11;
-                l_v = table[(next_random >> 16) % table_size] * layer1_size; // row of V
-                next_random = next_random * (unsigned long long)25214903917 + 11;
-                l_u = table[(next_random >> 16) % table_size] * layer1_size; //row of U
-              }
+              // if (lambda > 0) // with regularization (Matthew Mu)
+              // {
+              //   next_random = next_random * (unsigned long long)25214903917 + 11;
+              //   l_v = table[(next_random >> 16) % table_size] * layer1_size; // row of V
+              //   next_random = next_random * (unsigned long long)25214903917 + 11;
+              //   l_u = table[(next_random >> 16) % table_size] * layer1_size; //row of U
+              // }
               if (d == 0)
               {
                 // positive sample
@@ -756,19 +766,29 @@ void *TrainModelThread(void *id)
           for (c = 0; c < layer1_size; c++)
           {
             syn0[c + l1] += neu1e[c];
-            if (lambda > 0)
+          }
+          if (lambda > 0) // with regularization (Matthew Mu)
+          {
+            for (int xx = 0; xx < negative + 1; xx++) // update negative+1 rows
             {
-              // to do: make more updates
-              syn1neg[c + l_v] += lambda * alpha * syn1neg[c + l_v]; // reg for V[l_v,:]
-              syn0[c + l_u] += lambda * alpha * syn0[c + l_u];       // reg for U[l_u, :]
+              next_random = next_random * (unsigned long long)25214903917 + 11;
+              l_v = table[(next_random >> 16) % table_size] * layer1_size; // row of V
+              next_random = next_random * (unsigned long long)25214903917 + 11;
+              l_u = table[(next_random >> 16) % table_size] * layer1_size; //row of U
+              for (c = 0; c < layer1_size; c++)
+              {
+                syn1neg[c + l_v] += lambda * alpha * syn1neg[c + l_v]; // reg for V[l_v,:]
+                syn0[c + l_u] += lambda * alpha * syn0[c + l_u];       // reg for U[l_u, :]
+              }
             }
           }
+          // a++ to the next neighbor (context word)
         }
     }
-    sentence_position++; // next word in the sentence
-    if (sentence_position >= sentence_length)
+    sentence_position++;                      // next word in the sentence
+    if (sentence_position >= sentence_length) // end of the sentence
     {
-      sentence_length = 0;
+      sentence_length = 0; // next sentence
       continue;
     }
   }
@@ -897,6 +917,7 @@ int ArgPos(char *str, int argc, char **argv)
   return -1;
 }
 
+// entry point
 int main(int argc, char **argv)
 {
   int i;

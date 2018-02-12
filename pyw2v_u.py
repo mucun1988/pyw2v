@@ -19,8 +19,8 @@ def download_preprocess_data(output_file='data/enwik9', replace=True):
     else:
         print(f'file does not exist and now create it.')
     print(f'download data...')
-    os.system('mkdir data')
-    os.system('mkdir rslt')
+    # os.system('mkdir data')
+    os.system('mkdir rslt')  # store output
     os.system('wget http://mattmahoney.net/dc/enwik9.zip -O data/tmp.gz')
     print(f'download data... done')
     print(f'preprocess the data and save it at {output_file}...')
@@ -51,7 +51,7 @@ def make():
 def train_w2v_model(file_to_train='data/enwik9', file_save_vocab='rslt/vocab.txt', file_save_vector='rslt/vector.txt',
                     word_dim=100, window=5, downsample=1e-3, negative=5, threads=12, num_iter=5, min_count=5, alpha=.025, lam=0):
     """
-    train google word2vec model
+    train google word2vec model (default settings are provided)
     """
     command = './word2vec_mm -cbow 0 -hs 0 -binary 0' + \
         ' -train ' + file_to_train + \
@@ -124,16 +124,22 @@ def nearest_words(word, vocab, inv_vocab, U, top=20):
 
 
 def normalize2d_row(X):
+    """
+    normalize the rows of X
+    """
     return normalize2d_col(X.T).T
 
 
 def normalize2d_col(X):
+    """
+    normalize the columns of X
+    """
     return X / np.linalg.norm(X, axis=0)
 
 
 def similarity_test_one(U, vocab, data_name='men3000'):
     """
-    # return the result on similarity test on the dataset
+    return the result on similarity test on the dataset
     """
     G = normalize2d_row(U)  # normalize
     filename = data_name + '.csv'
@@ -161,7 +167,7 @@ def similarity_test_one(U, vocab, data_name='men3000'):
 
 def similarity_test_all(U, vocab):
     """
-    # return the result on similarity test on all dataset
+    return the result on similarity test on all dataset
     """
     sorted_names = ['mc30', 'rg65', 'verb143', 'wordsim_sim', 'wordsim_rel', 'wordsim353',
                     'mturk287', 'mturk771', 'simlex999', 'rw2034', 'men3000']
@@ -213,7 +219,8 @@ def analogical_reasoning(U, vocab, inv_vocab):
         tri_words = (a, a_, b)
 
         if (a in vocab) and (a_ in vocab) and (b in vocab) and (b_ in vocab):
-            pred = find_b_star(tri_words, W, vocab, inv_vocab, normalized=True)
+            pred = find_b_star(tri_words, W, vocab, inv_vocab,
+                               normalized=True)  # prediction
             if (pred == b_):
                 good_sum += 1
         else:
