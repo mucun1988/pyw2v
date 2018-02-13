@@ -7,7 +7,6 @@ import pickle as pk
 
 make()
 
-lam = 1e-5
 num_iter = 5
 d_set = [100, 200, 300, 400, 500]
 lam_set = [0, 1e-5, 1e-10, 1e-15]
@@ -26,5 +25,11 @@ for d in d_set:
 
         df_rslt = pd.DataFrame(rslt)
         print(df_rslt)
-        output_file = 'rslt/test_v10_iter_' + str(num_iter) + '.pkl'
-        df_rslt.to_pickle(output_file)
+        output_file = 'rslt/test_v10_iter_' + str(num_iter) + '.csv'
+        df_rslt.to_csv(output_file, index=False)
+
+# 10: update once (possible)
+# 11: update more times (possible)
+# 12: fix lambda + update more times (sees that fix lambda not working)
+# 13: chnage parameter settings: k = 15, downsample=1e-5  (seems not working, more iterations?)
+# 14: more iterations 5 --> 20 (finally try more iterations)

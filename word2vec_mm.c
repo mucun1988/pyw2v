@@ -769,7 +769,7 @@ void *TrainModelThread(void *id)
           }
           if (lambda > 0) // with regularization (Matthew Mu)
           {
-            for (int xx = 0; xx < negative + 1; xx++) // update negative+1 rows
+            for (int xx = 0; xx < 1; xx++) // update negative+1 rows
             {
               next_random = next_random * (unsigned long long)25214903917 + 11;
               l_v = table[(next_random >> 16) % table_size] * layer1_size; // row of V
