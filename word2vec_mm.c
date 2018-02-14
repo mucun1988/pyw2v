@@ -440,6 +440,11 @@ void ReadVocab()
   fclose(fin);
 }
 
+double r2()
+{
+  return (double)rand() / (double)RAND_MAX;
+}
+
 /**
  * ====== InitNet ======
  * 
@@ -477,14 +482,19 @@ void InitNet()
     }
     for (a = 0; a < vocab_size; a++)
       for (b = 0; b < layer1_size; b++)
-        syn1neg[a * layer1_size + b] = 0; // initialize V as 0
+      {
+        next_random = next_random * (unsigned long long)25214903917 + 11;
+        syn1neg[a * layer1_size + b] = (((next_random & 0xFFFF) / (real)65536) - 0.5) / layer1_size; // random initialize U
+      }
+    // syn1neg[a * layer1_size + b] = 0; // initialize V as 0
+    //syn1neg[a * layer1_size + b] = (r2() - 0.5) / layer1_size;
   }
   for (a = 0; a < vocab_size; a++)
     for (b = 0; b < layer1_size; b++)
     {
-      // next_random = next_random * (unsigned long long)25214903917 + 11;
-      // syn0[a * layer1_size + b] = (((next_random & 0xFFFF) / (real)65536) - 0.5) / layer1_size; // random initialize U
-      syn0[a * layer1_size + b] = 0; // initialize U as 0
+      next_random = next_random * (unsigned long long)25214903917 + 11;
+      syn0[a * layer1_size + b] = (((next_random & 0xFFFF) / (real)65536) - 0.5) / layer1_size; // random initialize U
+      //syn0[a * layer1_size + b] = (r2() - 0.5) / layer1_size; // initialize U as normal
     }
   CreateBinaryTree();
 }
