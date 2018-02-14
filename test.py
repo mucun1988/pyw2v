@@ -28,8 +28,19 @@ for d in d_set:
         output_file = 'rslt/test_v10_iter_' + str(num_iter) + '.csv'
         df_rslt.to_csv(output_file, index=False)
 
-# 10: update once (possible)
-# 11: update more times (possible)
+# 10: update once (does not work well)
+# 11: update more times (plausible)
 # 12: fix lambda + update more times (sees that fix lambda not working)
 # 13: chnage parameter settings: k = 15, downsample=1e-5  (seems not working, more iterations?)
 # 14: more iterations 5 --> 20 (finally try more iterations)
+# 15: update once only after a whole sentence
+# 16: sample just one entry? U_{ij} V_{ij}
+# 17:
+
+
+# 10: update once (does not work)
+# 11: update more times (plausible)
+# 12: fix lambda + update more times ()
+# 13: chnage parameter settings: k = 15, downsample=1e-5  ()
+# 14: more iterations 5 --> 20 (finally try more iterations)
+# 15: update once after one epoch

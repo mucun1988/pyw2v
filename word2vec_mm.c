@@ -482,8 +482,9 @@ void InitNet()
   for (a = 0; a < vocab_size; a++)
     for (b = 0; b < layer1_size; b++)
     {
-      next_random = next_random * (unsigned long long)25214903917 + 11;
-      syn0[a * layer1_size + b] = (((next_random & 0xFFFF) / (real)65536) - 0.5) / layer1_size; // random initialize U
+      // next_random = next_random * (unsigned long long)25214903917 + 11;
+      // syn0[a * layer1_size + b] = (((next_random & 0xFFFF) / (real)65536) - 0.5) / layer1_size; // random initialize U
+      syn0[a * layer1_size + b] = 0; // initialize U as 0
     }
   CreateBinaryTree();
 }
@@ -493,7 +494,8 @@ void *TrainModelThread(void *id)
 {
   long long a, b, d, cw, word, last_word, sentence_length = 0, sentence_position = 0;
   long long word_count = 0, last_word_count = 0, sen[MAX_SENTENCE_LENGTH + 1];
-  long long l1, l2, l_u, l_v, c, target, label, local_iter = iter;
+  long long l1, l2, c, target, label, local_iter = iter;
+  // long long l_u, l_;
   unsigned long long next_random = (long long)id;
   char eof = 0;
   real f, g;
@@ -557,6 +559,18 @@ void *TrainModelThread(void *id)
     if (eof || (word_count > train_words / num_threads))
     {
       word_count_actual += word_count - last_word_count;
+
+      // do a (U,V) update
+      if (lambda > 0) // with regularization (Matthew Mu)
+      {
+        for (int aa = 0; aa < vocab_size; aa++)
+          for (int bb = 0; bb < layer1_size; bb++)
+          {
+            syn1neg[aa * layer1_size + bb] -= lambda * alpha * syn1neg[aa * layer1_size + bb];
+            syn0[aa * layer1_size + bb] -= lambda * alpha * syn0[aa * layer1_size + bb];
+          }
+      }
+
       local_iter--;        // finish one epoch
       if (local_iter == 0) // finish all epochs (five epochs by default)
         break;
@@ -769,19 +783,19 @@ void *TrainModelThread(void *id)
           }
           if (lambda > 0) // with regularization (Matthew Mu)
           {
-            for (int xx = 0; xx < 1; xx++) // update negative+1 rows
-            {
-              next_random = next_random * (unsigned long long)25214903917 + 11;
-              l_v = table[(next_random >> 16) % table_size] * layer1_size; // row of V
-              next_random = next_random * (unsigned long long)25214903917 + 11;
-              l_u = table[(next_random >> 16) % table_size] * layer1_size; //row of U
-              for (c = 0; c < layer1_size; c++)
-              {
-                // to do: check
-                syn1neg[c + l_v] -= lambda * alpha * syn1neg[c + l_v]; // reg for V[l_v,:]
-                syn0[c + l_u] -= lambda * alpha * syn0[c + l_u];       // reg for U[l_u, :]
-              }
-            }
+            // for (int xx = 0; xx < 1; xx++) // update negative+1 rows
+            // {
+            //   next_random = next_random * (unsigned long long)25214903917 + 11;
+            //   l_v = table[(next_random >> 16) % table_size] * layer1_size; // row of V
+            //   next_random = next_random * (unsigned long long)25214903917 + 11;
+            //   l_u = table[(next_random >> 16) % table_size] * layer1_size; //row of U
+            //   for (c = 0; c < layer1_size; c++)
+            //   {
+            //     // to do: check
+            //     syn1neg[c + l_v] -= lambda * alpha * syn1neg[c + l_v]; // reg for V[l_v,:]
+            //     syn0[c + l_u] -= lambda * alpha * syn0[c + l_u];       // reg for U[l_u, :]
+            //   }
+            // }
           }
           // a++ to the next neighbor (context word)
         }
