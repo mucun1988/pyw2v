@@ -453,7 +453,7 @@ double r2()
 void InitNet()
 {
   long long a, b;
-  // unsigned long long next_random = 1;
+  unsigned long long next_random = 1;
   a = posix_memalign((void **)&syn0, 128, (long long)vocab_size * layer1_size * sizeof(real));
   if (syn0 == NULL)
   {
@@ -483,9 +483,9 @@ void InitNet()
     for (a = 0; a < vocab_size; a++)
       for (b = 0; b < layer1_size; b++)
       {
-        // next_random = next_random * (unsigned long long)25214903917 + 11;
-        // syn1neg[a * layer1_size + b] = (((next_random & 0xFFFF) / (real)65536) - 0.5) / layer1_size; // random initialize U
-        syn1neg[a * layer1_size + b] = 1 / sqrt(layer1_size);
+        next_random = next_random * (unsigned long long)25214903917 + 11;
+        syn1neg[a * layer1_size + b] = (((next_random & 0xFFFF) / (real)65536) - 0.5) / layer1_size; // random initialize U
+        // syn1neg[a * layer1_size + b] = 1 / sqrt(layer1_size);
       }
     // syn1neg[a * layer1_size + b] = 0; // initialize V as 0
     //syn1neg[a * layer1_size + b] = (r2() - 0.5) / layer1_size;
@@ -493,9 +493,9 @@ void InitNet()
   for (a = 0; a < vocab_size; a++)
     for (b = 0; b < layer1_size; b++)
     {
-      // next_random = next_random * (unsigned long long)25214903917 + 11;
-      // syn0[a * layer1_size + b] = (((next_random & 0xFFFF) / (real)65536) - 0.5) / layer1_size; // random initialize U
-      syn0[a * layer1_size + b] = 1 / sqrt(layer1_size);
+      next_random = next_random * (unsigned long long)25214903917 + 11;
+      syn0[a * layer1_size + b] = (((next_random & 0xFFFF) / (real)65536) - 0.5) / layer1_size; // random initialize U
+      // syn0[a * layer1_size + b] = 1 / sqrt(layer1_size);
       //syn0[a * layer1_size + b] = (r2() - 0.5) / layer1_size; // initialize U as normal
     }
   CreateBinaryTree();
@@ -578,8 +578,8 @@ void *TrainModelThread(void *id)
         for (int aa = 0; aa < vocab_size; aa++)
           for (int bb = 0; bb < layer1_size; bb++)
           {
-            syn1neg[aa * layer1_size + bb] -= lambda * alpha * syn1neg[aa * layer1_size + bb];
-            syn0[aa * layer1_size + bb] -= lambda * alpha * syn0[aa * layer1_size + bb];
+            syn1neg[aa * layer1_size + bb] -= ending_lambda / iter * alpha * syn1neg[aa * layer1_size + bb]; // remove alpha
+            syn0[aa * layer1_size + bb] -= ending_lambda / iter * alpha * syn0[aa * layer1_size + bb];
           }
       }
 
