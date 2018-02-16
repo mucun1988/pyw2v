@@ -507,7 +507,8 @@ void *TrainModelThread(void *id)
   long long a, b, d, cw, word, last_word, sentence_length = 0, sentence_position = 0;
   long long word_count = 0, last_word_count = 0, sen[MAX_SENTENCE_LENGTH + 1];
   long long l1, l2, c, target, label, local_iter = iter;
-  // long long l_u, l_;
+  long long ii, jj, idx;
+  // long long l_u, l_v;
   unsigned long long next_random = (long long)id;
   char eof = 0;
   real f, g;
@@ -531,7 +532,7 @@ void *TrainModelThread(void *id)
         fflush(stdout);
       }
       alpha = starting_alpha * (1 - word_count_actual / (real)(iter * train_words + 1)); // learning rate
-      lambda = ending_lambda * 2 * word_count_actual / (real)(iter * train_words + 1);   // dynamic lambda
+      lambda = ending_lambda * 1.5 * word_count_actual / (real)(iter * train_words + 1); // dynamic lambda
       if (alpha < starting_alpha * 0.0001)
         alpha = starting_alpha * 0.0001;
       if (lambda >= ending_lambda)
@@ -573,18 +574,60 @@ void *TrainModelThread(void *id)
       word_count_actual += word_count - last_word_count;
 
       // do a (U,V) update
-      if (lambda > 0) // with regularization (Matthew Mu)
+
+      // method 1
+      // if (lambda > 0) // with regularization (Matthew Mu) + add some randomization?
+      // {
+      //   for (int aa = 0; aa < vocab_size; aa++)
+      //     for (int bb = 0; bb < layer1_size; bb++)
+      //     {
+      //       syn1neg[aa * layer1_size + bb] -= lambda / iter / num_threads * alpha * syn1neg[aa * layer1_size + bb]; // remove alpha
+      //       syn0[aa * layer1_size + bb] -= lambda / iter / num_threads * alpha * syn0[aa * layer1_size + bb];
+      //     }
+      // }
+
+      // method 2
+      // if (lambda > 0) // with regularization (Matthew Mu) + add some randomization?
+      // {
+      //   for (int aa = 0; aa < vocab_size; aa++)
+      //     for (int bb = 0; bb < layer1_size; bb++)
+      //     {
+      //       syn1neg[aa * layer1_size + bb] -= lambda / iter / num_threads * alpha * syn1neg[aa * layer1_size + bb]; // remove alpha
+      //       syn0[aa * layer1_size + bb] -= lambda / iter / num_threads * alpha * syn0[aa * layer1_size + bb];
+      //     }
+      // }
+
+      // // method 3 random rows (how many rows?)
+      // for (int xx = 0; xx < vocab_size / num_threads; xx++) // update negative+1 rows
+      // {
+      //   next_random = next_random * (unsigned long long)25214903917 + 11;
+      //   l_v = ((next_random >> 16) % vocab_size) * layer1_size; // row of V
+      //   next_random = next_random * (unsigned long long)25214903917 + 11;
+      //   l_u = ((next_random >> 16) % vocab_size) * layer1_size; //row of U
+      //   for (c = 0; c < layer1_size; c++)
+      //   {
+      //     // to do: check
+      //     syn1neg[c + l_v] -= lambda / iter * alpha * syn1neg[c + l_v]; // reg for V[l_v,:]
+      //     syn0[c + l_u] -= lambda / iter * alpha * syn0[c + l_u];       // reg for U[l_u, :]
+      //   }
+      // }
+
+      // method 4 random entries
+      for (int xx = 0; xx < vocab_size * layer1_size / num_threads; xx++)
       {
-        for (int aa = 0; aa < vocab_size; aa++)
-          for (int bb = 0; bb < layer1_size; bb++)
-          {
-            syn1neg[aa * layer1_size + bb] -= ending_lambda / iter * alpha * syn1neg[aa * layer1_size + bb]; // remove alpha
-            syn0[aa * layer1_size + bb] -= ending_lambda / iter * alpha * syn0[aa * layer1_size + bb];
-          }
+        next_random = next_random * (unsigned long long)25214903917 + 11;
+        ii = (next_random >> 16) % vocab_size * layer1_size; // row of V
+        next_random = next_random * (unsigned long long)25214903917 + 11;
+        jj = (next_random >> 16) % layer1_size; // row of V
+        idx = ii + jj;
+        syn1neg[idx] -= lambda / iter * alpha * syn1neg[idx]; // reg for V[l_v,:]
+        syn0[idx] -= lambda / iter * alpha * syn0[idx];       // reg for U[l_u, :]
       }
 
-      local_iter--;        // finish one epoch
-      if (local_iter == 0) // finish all epochs (five epochs by default)
+      // update only 1/num_threads entries (row or entries)
+
+      local_iter--;        // finish one iteration
+      if (local_iter == 0) // finish all iterations (five iter. by default)
         break;
       word_count = 0; // reset everything for the new epoch
       last_word_count = 0;
