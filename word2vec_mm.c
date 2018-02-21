@@ -484,19 +484,15 @@ void InitNet()
       for (b = 0; b < layer1_size; b++)
       {
         next_random = next_random * (unsigned long long)25214903917 + 11;
-        syn1neg[a * layer1_size + b] = (((next_random & 0xFFFF) / (real)65536) - 0.5) / layer1_size; // random initialize U
-        // syn1neg[a * layer1_size + b] = 1 / sqrt(layer1_size);
+        syn1neg[a * layer1_size + b] = (((next_random & 0xFFFF) / (real)65536) - 0.5) / layer1_size; // random initialize V
+        // syn1neg[a * layer1_size + b] = 0; // initialize V as 0
       }
-    // syn1neg[a * layer1_size + b] = 0; // initialize V as 0
-    //syn1neg[a * layer1_size + b] = (r2() - 0.5) / layer1_size;
   }
   for (a = 0; a < vocab_size; a++)
     for (b = 0; b < layer1_size; b++)
     {
       next_random = next_random * (unsigned long long)25214903917 + 11;
-      syn0[a * layer1_size + b] = (((next_random & 0xFFFF) / (real)65536) - 0.5) / layer1_size; // random initialize U
-      // syn0[a * layer1_size + b] = 1 / sqrt(layer1_size);
-      //syn0[a * layer1_size + b] = (r2() - 0.5) / layer1_size; // initialize U as normal
+      syn0[a * layer1_size + b] = (((next_random & 0xFFFF) / (real)65536) - 0.5) / layer1_size; // random initialize U (same as V)
     }
   CreateBinaryTree();
 }
@@ -616,12 +612,17 @@ void *TrainModelThread(void *id)
       for (int xx = 0; xx < vocab_size * layer1_size / num_threads; xx++)
       {
         next_random = next_random * (unsigned long long)25214903917 + 11;
-        ii = (next_random >> 16) % vocab_size * layer1_size; // row of V
+        ii = ((next_random >> 16) % vocab_size) * layer1_size; // row of V
         next_random = next_random * (unsigned long long)25214903917 + 11;
-        jj = (next_random >> 16) % layer1_size; // row of V
+        jj = (next_random >> 16) % layer1_size; // column of V
         idx = ii + jj;
-        syn1neg[idx] -= lambda / iter * alpha * syn1neg[idx]; // reg for V[l_v,:]
-        syn0[idx] -= lambda / iter * alpha * syn0[idx];       // reg for U[l_u, :]
+        syn1neg[idx] -= lambda / iter * alpha * syn1neg[idx];
+        // next_random = next_random * (unsigned long long)25214903917 + 11;
+        // ii = (next_random >> 16) % vocab_size * layer1_size; // row of V
+        // next_random = next_random * (unsigned long long)25214903917 + 11;
+        // jj = (next_random >> 16) % layer1_size; // row of V
+        // idx = ii + jj;
+        syn0[idx] -= lambda / iter * alpha * syn0[idx];
       }
 
       // update only 1/num_threads entries (row or entries)
