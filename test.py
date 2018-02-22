@@ -2,7 +2,7 @@ import os
 import numpy as np
 import pandas as pd
 from scipy import stats
-from pyw2v_u import train_w2v_model, load_rslt_from_c_output, analogical_reasoning
+from pyw2v_u import *
 import pickle as pk
 
 make()  # compile the C code
