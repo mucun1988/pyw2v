@@ -49,7 +49,7 @@ def make():
 
 
 def train_w2v_model(file_to_train='data/enwik9', file_save_vocab='rslt/vocab.txt', file_save_vector='rslt/vector.txt',
-                    word_dim=100, window=5, downsample=1e-3, negative=5, threads=12, num_iter=5, min_count=5, alpha=.025, lam=0):
+                    word_dim=100, window=5, downsample=1e-3, negative=5, threads=12, num_iter=5, min_count=200, alpha=.025, lam=1e-10):
     """
     train google word2vec model (default settings are provided)
     """
