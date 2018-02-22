@@ -485,7 +485,6 @@ void InitNet()
       {
         next_random = next_random * (unsigned long long)25214903917 + 11;
         syn1neg[a * layer1_size + b] = (((next_random & 0xFFFF) / (real)65536) - 0.5) / layer1_size; // random initialize V
-        // syn1neg[a * layer1_size + b] = 0; // initialize V as 0
       }
   }
   for (a = 0; a < vocab_size; a++)
@@ -536,12 +535,11 @@ void *TrainModelThread(void *id)
       {
         lambda = ending_lambda;
       }
-      //else{lambda = ending_lambda * 2 * word_count_actual / (real)(iter * train_words + 1);} // dynamic lambda
+
       if (alpha < starting_alpha * 0.0001)
+      {
         alpha = starting_alpha * 0.0001;
-      //if (lambda >= ending_lambda)
-      // lambda = ending_lambda;
-      // lambda = ending_lambda; // fixed lambda
+      }
     }
 
     // this if block: retrieves the next sentence and stores it in "sen"
@@ -577,46 +575,7 @@ void *TrainModelThread(void *id)
     {
       word_count_actual += word_count - last_word_count;
 
-      // do a (U,V) update
-
-      // method 1
-      // if (lambda > 0) // with regularization (Matthew Mu) + add some randomization?
-      // {
-      //   for (int aa = 0; aa < vocab_size; aa++)
-      //     for (int bb = 0; bb < layer1_size; bb++)
-      //     {
-      //       syn1neg[aa * layer1_size + bb] -= lambda / iter / num_threads * alpha * syn1neg[aa * layer1_size + bb]; // remove alpha
-      //       syn0[aa * layer1_size + bb] -= lambda / iter / num_threads * alpha * syn0[aa * layer1_size + bb];
-      //     }
-      // }
-
-      // method 2
-      // if (lambda > 0) // with regularization (Matthew Mu) + add some randomization?
-      // {
-      //   for (int aa = 0; aa < vocab_size; aa++)
-      //     for (int bb = 0; bb < layer1_size; bb++)
-      //     {
-      //       syn1neg[aa * layer1_size + bb] -= lambda / iter / num_threads * alpha * syn1neg[aa * layer1_size + bb]; // remove alpha
-      //       syn0[aa * layer1_size + bb] -= lambda / iter / num_threads * alpha * syn0[aa * layer1_size + bb];
-      //     }
-      // }
-
-      // // method 3 random rows (how many rows?)
-      // for (int xx = 0; xx < vocab_size / num_threads; xx++) // update negative+1 rows
-      // {
-      //   next_random = next_random * (unsigned long long)25214903917 + 11;
-      //   l_v = ((next_random >> 16) % vocab_size) * layer1_size; // row of V
-      //   next_random = next_random * (unsigned long long)25214903917 + 11;
-      //   l_u = ((next_random >> 16) % vocab_size) * layer1_size; //row of U
-      //   for (c = 0; c < layer1_size; c++)
-      //   {
-      //     // to do: check
-      //     syn1neg[c + l_v] -= lambda / iter * alpha * syn1neg[c + l_v]; // reg for V[l_v,:]
-      //     syn0[c + l_u] -= lambda / iter * alpha * syn0[c + l_u];       // reg for U[l_u, :]
-      //   }
-      // }
-
-      // method 4 random entries
+      // random entries
       for (int xx = 0; xx < vocab_size * layer1_size / num_threads; xx++)
       {
         next_random = next_random * (unsigned long long)25214903917 + 11;
@@ -625,15 +584,8 @@ void *TrainModelThread(void *id)
         jj = (next_random >> 16) % layer1_size; // column of V
         idx = ii + jj;
         syn1neg[idx] -= lambda / iter * alpha * syn1neg[idx];
-        // next_random = next_random * (unsigned long long)25214903917 + 11;
-        // ii = (next_random >> 16) % vocab_size * layer1_size; // row of V
-        // next_random = next_random * (unsigned long long)25214903917 + 11;
-        // jj = (next_random >> 16) % layer1_size; // row of V
-        // idx = ii + jj;
         syn0[idx] -= lambda / iter * alpha * syn0[idx];
       }
-
-      // update only 1/num_threads entries (row or entries)
 
       local_iter--;        // finish one iteration
       if (local_iter == 0) // finish all iterations (five iter. by default)
@@ -844,22 +796,6 @@ void *TrainModelThread(void *id)
           for (c = 0; c < layer1_size; c++)
           {
             syn0[c + l1] += neu1e[c];
-          }
-          if (lambda > 0) // with regularization (Matthew Mu)
-          {
-            // for (int xx = 0; xx < 1; xx++) // update negative+1 rows
-            // {
-            //   next_random = next_random * (unsigned long long)25214903917 + 11;
-            //   l_v = table[(next_random >> 16) % table_size] * layer1_size; // row of V
-            //   next_random = next_random * (unsigned long long)25214903917 + 11;
-            //   l_u = table[(next_random >> 16) % table_size] * layer1_size; //row of U
-            //   for (c = 0; c < layer1_size; c++)
-            //   {
-            //     // to do: check
-            //     syn1neg[c + l_v] -= lambda * alpha * syn1neg[c + l_v]; // reg for V[l_v,:]
-            //     syn0[c + l_u] -= lambda * alpha * syn0[c + l_u];       // reg for U[l_u, :]
-            //   }
-            // }
           }
           // a++ to the next neighbor (context word)
         }
