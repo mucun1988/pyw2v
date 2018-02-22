@@ -12,7 +12,7 @@ lam = 1e-10
 
 rslt = []
 
-train_w2v_model(min_count=200, lam=lam, word_dim=d)
+train_w2v_model(min_count=200, lam=lam, word_dim=dim)
 vocab, inv_vocab, word_embedding = load_rslt_from_c_output()
 
 # analogy
