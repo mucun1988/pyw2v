@@ -8,7 +8,7 @@ import pickle as pk
 make()
 
 num_iter = 5
-d_set = [100, 300, 500, 700, 900]
+d_set = [900, 700, 500, 300, 100]
 lam_set = [1e-10, 1e-5, 1e-15, 0]
 
 rslt = []
