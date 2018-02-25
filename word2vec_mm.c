@@ -749,13 +749,6 @@ void *TrainModelThread(void *id)
           if (negative > 0)
             for (d = 0; d < negative + 1; d++)
             {
-              // if (lambda > 0) // with regularization (Matthew Mu)
-              // {
-              //   next_random = next_random * (unsigned long long)25214903917 + 11;
-              //   l_v = table[(next_random >> 16) % table_size] * layer1_size; // row of V
-              //   next_random = next_random * (unsigned long long)25214903917 + 11;
-              //   l_u = table[(next_random >> 16) % table_size] * layer1_size; //row of U
-              // }
               if (d == 0)
               {
                 // positive sample
